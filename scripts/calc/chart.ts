@@ -16,7 +16,7 @@ import {
   formatSignedMinutes,
 } from '../../lib/ziwei/true-solar-time';
 import { BRANCHES, STEMS } from '../../lib/ziwei/constants';
-import { getSiHuaByStem } from '../../lib/ziwei/sihua';
+import { getSiHuaByStem, getYearStemIndex, getYearBranchIndex } from '../../lib/ziwei/sihua';
 import type { LunarMonthPolicy } from '../../lib/ziwei/school-config';
 import type { LateZishiRule } from '../../lib/ziwei/true-solar-time';
 import type { ZiweiChart, Star } from '../../lib/ziwei/types';
@@ -187,13 +187,30 @@ L('─'.repeat(COL * 4 + 3));
 
 L('─'.repeat(72));
 L('大限（每十年一宫）：');
-for (const d of chart.daXians) {
+chart.daXians.forEach((d, i) => {
   const mark = d.startAge <= chart.currentAge && chart.currentAge <= d.endAge ? ' ←当前' : '';
+  const pal = chart.palaces.find((p) => p.branch === d.palaceBranch);
+  const stem = pal ? STEMS[pal.stem] : '';
+  const sh = pal ? getSiHuaByStem(pal.stem) : null;
   L(
-    `　${String(d.startAge).padStart(2)}–${String(d.endAge).padStart(3)} 岁　${d.palaceName}${d.palaceName.endsWith('宫') ? '' : '宫'} ${d.stemName ?? ''}${BRANCHES[d.palaceBranch]}` +
-      (d.siHua ? `　禄:${d.siHua.lu}　权:${d.siHua.quan}　科:${d.siHua.ke}　忌:${d.siHua.ji}` : '') +
+    `　${String(d.startAge).padStart(2)}–${String(d.endAge).padStart(3)} 岁　${d.palaceName}${d.palaceName.endsWith('宫') ? '' : '宫'} ${stem}${BRANCHES[d.palaceBranch]}` +
+      (sh ? `　禄:${sh['禄']}　权:${sh['权']}　科:${sh['科']}　忌:${sh['忌']}` : '') +
       mark,
   );
+});
+L('─'.repeat(72));
+
+// 流年（今年）
+const thisYear = Number(arg('year', String(new Date().getFullYear())));
+const lnStem = getYearStemIndex(thisYear);
+const lnSiHua = getSiHuaByStem(lnStem);
+const lnZhi = getYearBranchIndex(thisYear);
+L(`流年 ${thisYear} ${STEMS[lnStem]}${BRANCHES[lnZhi]}年（虚岁 ${thisYear - chart.birthInfo.year + 1}）`);
+L(`　流年命宫　${BRANCHES[lnZhi]}宫 = ${palaceAt(lnZhi)?.name ?? '-'}`);
+L(`　流年四化　禄${lnSiHua['禄']}　权${lnSiHua['权']}　科${lnSiHua['科']}　忌${lnSiHua['忌']}`);
+for (const [hua, star] of Object.entries(lnSiHua)) {
+  const where = chart.palaces.filter((p) => p.stars.some((s) => s.name === star));
+  L(`　　${hua} ${star} → ${where.length ? where.map((p) => `${p.name}(${BRANCHES[p.branch]})`).join('、') : '不在盘上（借对宫看）'}`);
 }
 L('─'.repeat(72));
 
