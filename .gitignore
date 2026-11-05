@@ -7,3 +7,6 @@ dist/
 *.tsbuildinfo
 .DS_Store
 node_modules
+
+scripts/calc/demo.txt
+scripts/calc/demo.json
